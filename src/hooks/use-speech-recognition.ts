@@ -32,7 +32,7 @@ export function useSpeechRecognition({ onResult, onError }: SpeechRecognitionOpt
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.interimResults = false; // Only get final results
     recognition.lang = 'ru-RU';
 
     recognition.onresult = (event) => {
@@ -43,7 +43,7 @@ export function useSpeechRecognition({ onResult, onError }: SpeechRecognitionOpt
         }
       }
       if (finalTranscript) {
-        onResult(finalTranscript);
+        onResult(finalTranscript.trim());
       }
     };
 

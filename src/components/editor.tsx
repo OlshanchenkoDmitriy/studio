@@ -29,10 +29,12 @@ export default function Editor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const onSpeechResult = useCallback((transcript: string) => {
-    const newContent = content ? `${content} ${transcript}` : transcript;
-    setContent(newContent);
-    onUpdateNote(note.id, newContent);
-  }, [content, note.id, onUpdateNote]);
+    setContent(prevContent => {
+      const newContent = prevContent ? `${prevContent} ${transcript}`.trim() : transcript;
+      onUpdateNote(note.id, newContent);
+      return newContent;
+    });
+  }, [note.id, onUpdateNote]);
 
   const onSpeechError = useCallback((error: string) => {
     toast({
