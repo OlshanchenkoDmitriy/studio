@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Mic, MicOff, Copy, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Mic, MicOff, Copy, Trash2, ZoomIn, ZoomOut, Undo, Redo, FileX } from 'lucide-react';
 
 interface ToolbarProps {
   isRecording: boolean;
@@ -11,6 +11,11 @@ interface ToolbarProps {
   onCopy: () => void;
   fontSize: number;
   setFontSize: (size: number | ((s:number) => number)) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onClear: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export default function Toolbar({
@@ -20,6 +25,11 @@ export default function Toolbar({
   onCopy,
   fontSize,
   setFontSize,
+  onUndo,
+  onRedo,
+  onClear,
+  canUndo,
+  canRedo,
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 p-2 border-b">
@@ -35,8 +45,20 @@ export default function Toolbar({
 
       <Separator orientation="vertical" className="h-6" />
 
+      <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo">
+        <Undo />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo">
+        <Redo />
+      </Button>
+
+      <Separator orientation="vertical" className="h-6" />
+
       <Button variant="ghost" size="icon" onClick={onCopy} aria-label="Copy note">
         <Copy />
+      </Button>
+       <Button variant="ghost" size="icon" onClick={onClear} aria-label="Clear note">
+        <FileX />
       </Button>
       <Button variant="ghost" size="icon" onClick={onDelete} className="hover:text-destructive" aria-label="Delete note">
         <Trash2 />

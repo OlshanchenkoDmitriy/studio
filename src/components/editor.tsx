@@ -25,13 +25,22 @@ export default function Editor({
   setFontSize,
 }: EditorProps) {
   const { toast } = useToast();
-  const [content, setContent] = useState(note.content);
+  const [history, setHistory] = useState<string[]>([note.content]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const content = history[historyIndex] ?? '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const updateContent = (newContent: string) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newContent);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    onUpdateNote(note.id, newContent);
+  };
+
   const onSpeechResult = useCallback((transcript: string) => {
-    setContent(prevContent => {
+    updateContent(prevContent => {
       const newContent = prevContent ? `${prevContent} ${transcript}`.trim() : transcript;
-      onUpdateNote(note.id, newContent);
       return newContent;
     });
   }, [note.id, onUpdateNote]);
@@ -48,16 +57,36 @@ export default function Editor({
     onResult: onSpeechResult,
     onError: onSpeechError,
   });
-
-  useEffect(() => {
-    setContent(note.content);
-  }, [note.content]);
-
+  
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-    onUpdateNote(note.id, e.target.value);
+    updateContent(e.target.value);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      onUpdateNote(note.id, history[newIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      onUpdateNote(note.id, history[newIndex]);
+    }
   };
   
+  const handleClear = () => {
+    updateContent('');
+  };
+
+  useEffect(() => {
+    setHistory([note.content]);
+    setHistoryIndex(0);
+  }, [note.id, note.content]);
+
   useEffect(() => {
     if (textareaRef.current) {
         textareaRef.current.style.fontSize = `${fontSize}px`;
@@ -74,6 +103,11 @@ export default function Editor({
         onCopy={() => onCopy(content)}
         fontSize={fontSize}
         setFontSize={setFontSize}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onClear={handleClear}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
       />
       <div className="flex-grow p-4 pt-0">
         <Textarea
