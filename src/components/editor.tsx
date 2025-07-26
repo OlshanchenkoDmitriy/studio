@@ -30,20 +30,30 @@ export default function Editor({
   const content = history[historyIndex] ?? '';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const updateContent = (newContent: string) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newContent);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-    onUpdateNote(note.id, newContent);
-  };
+  const updateContent = useCallback((newContent: string, fromSpeech = false) => {
+    setHistory(prevHistory => {
+      let updatedContent = newContent;
+      if (fromSpeech) {
+          const currentContent = prevHistory[prevHistory.length - 1] ?? '';
+          updatedContent = currentContent ? `${currentContent} ${newContent}`.trim() : newContent;
+      }
+
+      const newHistory = prevHistory.slice(0, historyIndex + 1);
+      newHistory.push(updatedContent);
+      onUpdateNote(note.id, updatedContent);
+      setHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
+  }, [historyIndex, note.id, onUpdateNote]);
+
 
   const onSpeechResult = useCallback((transcript: string) => {
-    updateContent(prevContent => {
-      const newContent = prevContent ? `${prevContent} ${transcript}`.trim() : transcript;
-      return newContent;
-    });
-  }, [note.id, onUpdateNote]);
+    if (textareaRef.current) {
+        const currentContent = textareaRef.current.value;
+        const newContent = currentContent ? `${currentContent} ${transcript}`.trim() : transcript;
+        updateContent(newContent);
+    }
+  }, [updateContent]);
 
   const onSpeechError = useCallback((error: string) => {
     toast({
