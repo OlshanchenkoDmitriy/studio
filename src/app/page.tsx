@@ -13,6 +13,7 @@ import {
 import NoteList from '@/components/note-list';
 import Editor from '@/components/editor';
 import Welcome from '@/components/welcome';
+import ToolsView from '@/components/tools-view';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Note } from '@/lib/types';
@@ -85,7 +86,7 @@ export default function LinguaScribeApp() {
           <Welcome onNewNote={handleNewNote} />
         );
       case 'tools':
-        return <div className="p-4">Tools coming soon...</div>;
+        return <ToolsView />;
       case 'suno':
         return <div className="p-4">Suno Editor coming soon...</div>;
       case 'settings':
@@ -96,7 +97,7 @@ export default function LinguaScribeApp() {
   };
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={activeView === 'notes'}>
       <div className="flex h-screen bg-background">
         <nav className="flex flex-col items-center gap-4 border-r bg-card p-2">
            <SidebarMenu>
@@ -146,13 +147,15 @@ export default function LinguaScribeApp() {
             </SidebarMenu>
         </nav>
         <Sidebar>
-            <NoteList
-            notes={notes}
-            activeNoteId={activeNoteId}
-            onSelectNote={handleSelectNote}
-            onNewNote={handleNewNote}
-            onDeleteNote={handleDeleteNote}
-            />
+            {activeView === 'notes' && (
+                <NoteList
+                    notes={notes}
+                    activeNoteId={activeNoteId}
+                    onSelectNote={handleSelectNote}
+                    onNewNote={handleNewNote}
+                    onDeleteNote={handleDeleteNote}
+                />
+            )}
         </Sidebar>
         <SidebarInset>
             {renderActiveView()}
