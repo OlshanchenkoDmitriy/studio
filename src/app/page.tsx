@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
 import NoteList from '@/components/note-list';
@@ -12,23 +16,18 @@ import Welcome from '@/components/welcome';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
 import type { Note } from '@/lib/types';
+import { FileText, Wrench, Music, Settings } from 'lucide-react';
+
+type ActiveView = 'notes' | 'tools' | 'suno' | 'settings';
 
 export default function LinguaScribeApp() {
   const { toast } = useToast();
   const [notes, setNotes] = useLocalStorage<Note[]>('lingua-scribe-notes', []);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [fontSize, setFontSize] = useLocalStorage<number>('lingua-scribe-font-size', 16);
+  const [activeView, setActiveView] = useState<ActiveView>('notes');
 
-  useEffect(() => {
-    if (!activeNoteId && notes.length > 0) {
-      setActiveNoteId(notes[0].id);
-    }
-    if (activeNoteId && !notes.find(n => n.id === activeNoteId)) {
-      setActiveNoteId(notes.length > 0 ? notes[0].id : null);
-    }
-  }, [notes, activeNoteId]);
-
-  const handleNewNote = useCallback(() => {
+  const handleNewNote = () => {
     const newNote: Note = {
       id: crypto.randomUUID(),
       content: '',
@@ -37,19 +36,21 @@ export default function LinguaScribeApp() {
     const newNotes = [newNote, ...notes];
     setNotes(newNotes);
     setActiveNoteId(newNote.id);
-  }, [notes, setNotes]);
+    setActiveView('notes');
+  };
 
-  const handleSelectNote = useCallback((id: string) => {
+  const handleSelectNote = (id: string) => {
     setActiveNoteId(id);
-  }, []);
+    setActiveView('notes');
+  };
 
-  const handleUpdateNote = useCallback((id: string, content: string) => {
+  const handleUpdateNote = (id: string, content: string) => {
     setNotes(prevNotes =>
       prevNotes.map(note => (note.id === id ? { ...note, content } : note))
     );
-  }, [setNotes]);
+  };
 
-  const handleDeleteNote = useCallback((id: string) => {
+  const handleDeleteNote = (id: string) => {
     setNotes(prevNotes => {
       const remainingNotes = prevNotes.filter(note => note.id !== id);
       if (activeNoteId === id) {
@@ -57,32 +58,20 @@ export default function LinguaScribeApp() {
       }
       return remainingNotes;
     });
-    toast({ title: "Note deleted", description: "The note has been successfully deleted." });
-  }, [activeNoteId, setNotes, toast]);
+    toast({ title: 'Note deleted', description: 'The note has been successfully deleted.' });
+  };
 
-  const handleCopy = useCallback((text: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied to clipboard!", description: "The note content has been copied." });
-  }, [toast]);
+    toast({ title: 'Copied to clipboard!', description: 'The note content has been copied.' });
+  };
 
+  const activeNote = notes.find(note => note.id === activeNoteId) || null;
 
-  const activeNote = useMemo(() => {
-    return notes.find(note => note.id === activeNoteId) || null;
-  }, [notes, activeNoteId]);
-
-  return (
-    <SidebarProvider>
-      <Sidebar>
-        <NoteList
-          notes={notes}
-          activeNoteId={activeNoteId}
-          onSelectNote={handleSelectNote}
-          onNewNote={handleNewNote}
-          onDeleteNote={handleDeleteNote}
-        />
-      </Sidebar>
-      <SidebarInset>
-        {activeNote ? (
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'notes':
+        return activeNote ? (
           <Editor
             key={activeNote.id}
             note={activeNote}
@@ -94,8 +83,81 @@ export default function LinguaScribeApp() {
           />
         ) : (
           <Welcome onNewNote={handleNewNote} />
-        )}
-      </SidebarInset>
+        );
+      case 'tools':
+        return <div className="p-4">Tools coming soon...</div>;
+      case 'suno':
+        return <div className="p-4">Suno Editor coming soon...</div>;
+      case 'settings':
+        return <div className="p-4">Settings coming soon...</div>;
+      default:
+        return <Welcome onNewNote={handleNewNote} />;
+    }
+  };
+
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="flex h-screen bg-background">
+        <nav className="flex flex-col items-center gap-4 border-r bg-card p-2">
+           <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={() => setActiveView('notes')}
+                    isActive={activeView === 'notes'}
+                    tooltip="Editor"
+                    className="h-10 w-10"
+                >
+                    <FileText />
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={() => setActiveView('tools')}
+                    isActive={activeView === 'tools'}
+                    tooltip="Text Tools"
+                    className="h-10 w-10"
+                >
+                    <Wrench />
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                    onClick={() => setActiveView('suno')}
+                    isActive={activeView === 'suno'}
+                    tooltip="Suno Editor"
+                    className="h-10 w-10"
+                >
+                    <Music />
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+           </SidebarMenu>
+           <div className="flex-grow" />
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={() => setActiveView('settings')}
+                        isActive={activeView === 'settings'}
+                        tooltip="Settings"
+                        className="h-10 w-10"
+                    >
+                        <Settings />
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        </nav>
+        <Sidebar>
+            <NoteList
+            notes={notes}
+            activeNoteId={activeNoteId}
+            onSelectNote={handleSelectNote}
+            onNewNote={handleNewNote}
+            onDeleteNote={handleDeleteNote}
+            />
+        </Sidebar>
+        <SidebarInset>
+            {renderActiveView()}
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }
